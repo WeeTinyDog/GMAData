@@ -1,10 +1,10 @@
 
 
 
-import * as THREE from '../three/build/three.module.js';
-import {GLTFLoader} from '../three/examples/jsm/loaders/GLTFLoader.js';
-import {OrbitControls} from '../three/examples/jsm/controls/OrbitControls.js';
-import { RGBELoader } from '../three/examples/jsm/loaders/RGBELoader.js';
+import * as THREE from '/three/build/three.module.js';
+import {GLTFLoader} from '/three/examples/jsm/loaders/GLTFLoader.js';
+import {OrbitControls} from '/three/examples/jsm/controls/OrbitControls.js';
+import { RGBELoader } from '/three/examples/jsm/loaders/RGBELoader.js';
 
 
 let scene, camera, renderer; //global so can be referenced wherever
