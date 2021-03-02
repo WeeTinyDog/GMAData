@@ -5,7 +5,7 @@ import * as THREE from '/GMAData/three/build/three.module.js';
 import {GLTFLoader} from '/GMAData/three/examples/jsm/loaders/GLTFLoader.js';
 import {OrbitControls} from '/GMAData/three/examples/jsm/controls/OrbitControls.js';
 import { RGBELoader } from '/GMAData/three/examples/jsm/loaders/RGBELoader.js';
-import * as TWEEN from 'GMAData/Other/dist/tween.esm.js';
+import * as TWEEN from '/GMAData/Other/dist/tween.esm.js';
 
 //REMEMBER TO CHANGE
 
