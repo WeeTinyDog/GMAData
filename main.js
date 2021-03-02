@@ -1,21 +1,21 @@
 
 
 //when live
-// import * as THREE from '/GMAData/three/build/three.module.js';
-// import {GLTFLoader} from '/GMAData/three/examples/jsm/loaders/GLTFLoader.js';
-// import {OrbitControls} from '/GMAData/three/examples/jsm/controls/OrbitControls.js';
-// import { RGBELoader } from '/GMAData/three/examples/jsm/loaders/RGBELoader.js';
-// import * as TWEEN from '/GMAData/Other/dist/tween.esm.js';
+import * as THREE from '/GMAData/three/build/three.module.js';
+import {GLTFLoader} from '/GMAData/three/examples/jsm/loaders/GLTFLoader.js';
+import {OrbitControls} from '/GMAData/three/examples/jsm/controls/OrbitControls.js';
+import { RGBELoader } from '/GMAData/three/examples/jsm/loaders/RGBELoader.js';
+import * as TWEEN from '/GMAData/Other/dist/tween.esm.js';
 
 //REMEMBER TO CHANGE
 
 
 //local
-import * as THREE from '/three/build/three.module.js';
-import {GLTFLoader} from '/three/examples/jsm/loaders/GLTFLoader.js';
-import {OrbitControls} from '/three/examples/jsm/controls/OrbitControls.js';
-import { RGBELoader } from '/three/examples/jsm/loaders/RGBELoader.js';
-import * as TWEEN from '/Other/dist/tween.esm.js';
+// import * as THREE from '/three/build/three.module.js';
+// import {GLTFLoader} from '/three/examples/jsm/loaders/GLTFLoader.js';
+// import {OrbitControls} from '/three/examples/jsm/controls/OrbitControls.js';
+// import { RGBELoader } from '/three/examples/jsm/loaders/RGBELoader.js';
+// import * as TWEEN from '/Other/dist/tween.esm.js';
 
 let scene, camera, renderer, controls; //global so can be referenced wherever
 let mouse = new THREE.Vector2(), INTERSECTED = null;
