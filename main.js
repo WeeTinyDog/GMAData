@@ -12,13 +12,15 @@ import { RGBELoader } from '/GMAData/three/examples/jsm/loaders/RGBELoader.js';
 // import {OrbitControls} from '/three/examples/jsm/controls/OrbitControls.js';
 // import { RGBELoader } from '/three/examples/jsm/loaders/RGBELoader.js';
 
+let scene, camera, renderer, controls; //global so can be referenced wherever
+let mouse = new THREE.Vector2(), INTERSECTED = null;
 
+var intersects = [];
+var raycaster = new THREE.Raycaster();
+var lastIntersect = null;
+var origColor = null;
 
-
-
-
-let scene, camera, renderer, controls, raycaster, mouse; //global so can be referenced wherever
-
+const objects = [];
 let postcodes = [
     {
         "identifier":"g1",
@@ -242,14 +244,8 @@ init();
 animate();
 render();
 
-
-
-
 function init() {
     var maxRequestsValue = 0;
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-
 
 
 
@@ -258,84 +254,60 @@ function init() {
             maxRequestsValue = element.requests;
         }
     });
-
     scene = new THREE.Scene();
     {
         const color ="aliceblue";
         const near = 10;
-        const far = 17.5;
+        const far = 20;
         scene.fog = new THREE.Fog(color, near, far);
         scene.background = new THREE.Color(color)
     }
+    const light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
+    scene.add( light );
 
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight,0.1, 1000);
+    const loc = new THREE.Vector3(0,3,0);
+    createMeshText("Testing text", loc);
+
+
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight,0.1, 1000);
     new RGBELoader() //load HDRI
     .setDataType( THREE.UnsignedByteType )
     .setPath( 'Textures/' )
-    .load( 'lilienstein_1k.hdr', function ( texture ) {
-
+    .load( 'CGSkies_0338_free.hdr', function ( texture ) {
         const envMap = pmremGenerator.fromEquirectangular( texture ).texture;
-
         //scene.background = envMap;
         scene.environment = envMap;
-
         texture.dispose();
         pmremGenerator.dispose();
-
         render();
-
         //LOAD MODELS HERE
         const loader = new GLTFLoader().setPath( 'Meshes/' );
         loader.load( 'glasgow.gltf', function ( gltf ) {
             scene.add( gltf.scene );
-
-
-
             render();
-
         } );
         loader.load( 'postcodes.gltf', function ( gltf ) {
             scene.add( gltf.scene );
             gltf.scene.traverse(function(child){
-
-
-
-                
                     let thisSegment = postcodes.find(thisSegment => thisSegment.identifier === child.name);
                     if(thisSegment!=null)
                     {
-
                     const col = new THREE.Color(1,1,1);
                     const percent = thisSegment.requests/maxRequestsValue;
-                    col.r = percent;
-                    col.g = 1-percent;
-                    col.b = 1-percent;
+                    col.r = 0;
+                    col.g = percent;
+                    col.b = 0;
                     var mat =new THREE.MeshPhysicalMaterial( { color: col } );
                     mat.transmission = 0.1;
                     mat.roughness = 0.02;
-   
-                    
                     mat.transparent = true;
-
                     child.material = mat;
-
                     child.scale.y = percent+0.01;
-                    }
-                    
-
-
-                
+                    objects.push(child);
+                    }   
             });
-
-
-
             render();
-
-
         } );
-
-        
-
     });
     //RENDERER SETTINGS
     renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -344,38 +316,27 @@ function init() {
 	renderer.toneMapping = THREE.ACESFilmicToneMapping;
 	renderer.toneMappingExposure = 2.0;
 	renderer.outputEncoding = THREE.sRGBEncoding;
-
     document.body.appendChild(renderer.domElement);
-
     //NEEDED TO GENERATE HDRI
     const pmremGenerator = new THREE.PMREMGenerator( renderer );
 	pmremGenerator.compileEquirectangularShader();
-   
     //DEFAULT ORBIT CONTROLS
     controls = new OrbitControls( camera, renderer.domElement );
     //controls.addEventListener( 'change', render ); // use if there is no animation loop
     controls.target.set( 0, 0, - 0.2 );
-
     controls.minPolarAngle = Math.PI/6;
     controls.maxPolarAngle = Math.PI/2.25;
     controls.enablePan = false;
     controls.minDistance = 5;
-    controls.maxDistance = 10;
+    controls.maxDistance = 12;
     controls.enableDamping = true;
     controls.dampingFactor =0.1;
-
-
-    camera.position.set( - 1.8, 1.5, 2.7 );
+    camera.position.set( - 1.8, 3, 10 );
     //REmember to call this after a manual move!
     controls.update();
-
+    window.addEventListener( 'mousemove', onMouseMove, false );
     window.addEventListener('resize', onWindowResize, false);
 }
-
-
-
-
-
 function animate(){
     requestAnimationFrame(animate);
     controls.update();
@@ -387,26 +348,75 @@ function update(){
    
 }
 
-function render(){
+function createMeshText(string, location)
+{
+    const loaderf = new THREE.FontLoader();
 
-  
+    loaderf.load( 'textures/helvetiker_regular.typeface.json', function ( font ) {
 
-    renderer.render(scene, camera);
+	const geometry = new THREE.TextGeometry( string, {
+		font: font,
+		size: 0.8,
+		height: 0.08,
+		curveSegments: 12,
+		bevelEnabled: false,
+		bevelThickness: 10,
+		bevelSize: 0.8,
+		bevelOffset: 0,
+		bevelSegments: 5
+	} );
+    const mat = new THREE.MeshPhysicalMaterial({color:"black"})
+    const mesh = new THREE.Mesh(geometry,mat);
+    mesh.position.y = location.y;
+    scene.add(mesh);
+
+    } );
 }
 
-
+function render(){
+    renderer.render(scene, camera);
+}
 
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-    render();
-    
+    render();   
 }
 
+function onMouseMove(event){
+    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    raycaster.setFromCamera( mouse, camera );
+    var intersects = raycaster.intersectObjects( objects, true );
 
 
+	if ( intersects.length > 0 ) {
+		var object = intersects[ 0 ].object;
+        if(object!==lastIntersect) //runs if object changed
+        {
+            if(lastIntersect !== null && origColor !== null)
+            {
+                //reset last intersect colour
+                //console.log(origColor);
+                lastIntersect.material.color.set(origColor);
+            }
+
+            //console.log("OBJECT CHANGED");
+            //get colour of new object
+            const col = new THREE.Color(object.material.color);
+            origColor = col;
+            //set colour of selected object to custom temp colour
+            object.material.color.set("red");
+
+            lastIntersect = object;
+        }
 
 
+        
+        
+		
+	
+	}
 
-
+}
