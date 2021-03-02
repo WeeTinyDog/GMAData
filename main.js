@@ -5,15 +5,24 @@ import * as THREE from '/GMAData/three/build/three.module.js';
 import {GLTFLoader} from '/GMAData/three/examples/jsm/loaders/GLTFLoader.js';
 import {OrbitControls} from '/GMAData/three/examples/jsm/controls/OrbitControls.js';
 import { RGBELoader } from '/GMAData/three/examples/jsm/loaders/RGBELoader.js';
+import * as TWEEN from 'GMAData/tween.js/dist/tween.esm.js';
 
 //local
 // import * as THREE from '/three/build/three.module.js';
 // import {GLTFLoader} from '/three/examples/jsm/loaders/GLTFLoader.js';
 // import {OrbitControls} from '/three/examples/jsm/controls/OrbitControls.js';
 // import { RGBELoader } from '/three/examples/jsm/loaders/RGBELoader.js';
+// import * as TWEEN from '/tween.js/dist/tween.esm.js';
 
 let scene, camera, renderer, controls; //global so can be referenced wherever
 let mouse = new THREE.Vector2(), INTERSECTED = null;
+let extrudedText = null;
+let extruding = false;
+let currentlySelectedObject = null;
+let currentlyClickedObject = null;
+
+var tween = new TWEEN.Tween();
+var tweenR = new TWEEN.Tween();
 
 var intersects = [];
 var raycaster = new THREE.Raycaster();
@@ -323,40 +332,59 @@ function init() {
     //DEFAULT ORBIT CONTROLS
     controls = new OrbitControls( camera, renderer.domElement );
     //controls.addEventListener( 'change', render ); // use if there is no animation loop
-    controls.target.set( 0, 0, - 0.2 );
-    controls.minPolarAngle = Math.PI/6;
+    //controls.target.set( 0, 0, 0 );
+    //controls.minPolarAngle = Math.PI/6;
     controls.maxPolarAngle = Math.PI/2.25;
-    controls.enablePan = false;
-    controls.minDistance = 5;
-    controls.maxDistance = 12;
+   // controls.maxAzimuthAngle = 0;
+   // controls.minAzimuthAngle = 0;
+    controls.enablePan = true;
+    //controls.minDistance = 5;
+    //controls.maxDistance = 20;
     controls.enableDamping = true;
     controls.dampingFactor =0.1;
+    controls.enabled = true;
     camera.position.set( - 1.8, 3, 10 );
     //REmember to call this after a manual move!
-    controls.update();
+    //controls.update();
     window.addEventListener( 'mousemove', onMouseMove, false );
     window.addEventListener('resize', onWindowResize, false);
+    renderer.domElement.addEventListener("click", onclick, true);
+    window.addEventListener('pointerdown', onPointerDown, false);
+
 }
 function animate(){
     requestAnimationFrame(animate);
-    controls.update();
-    update();
+   // controls.update();
+    tween.update();
+    tweenR.update();
+
+ 
     renderer.render(scene, camera);
 }
 
-function update(){
-   
-}
 
-function createMeshText(string, location)
+
+function createMeshText(string, location, size)
 {
+    if(extrudedText!==null)
+    {
+        extrudedText.geometry.dispose();
+        scene.remove(extrudedText);
+        extrudedText = null;
+
+    }
+    if(extrudedText==null && extruding == false)
+    {
+
+
+
     const loaderf = new THREE.FontLoader();
 
-    loaderf.load( 'textures/helvetiker_regular.typeface.json', function ( font ) {
+    loaderf.load( 'Textures/helvetiker_regular.typeface.json', function ( font ) {
 
 	const geometry = new THREE.TextGeometry( string, {
 		font: font,
-		size: 0.8,
+		size: size,
 		height: 0.08,
 		curveSegments: 12,
 		bevelEnabled: false,
@@ -365,12 +393,24 @@ function createMeshText(string, location)
 		bevelOffset: 0,
 		bevelSegments: 5
 	} );
-    const mat = new THREE.MeshPhysicalMaterial({color:"black"})
+    geometry.center();
+    const mat = new THREE.MeshPhysicalMaterial({color:"white"})
     const mesh = new THREE.Mesh(geometry,mat);
+    if(extrudedText == null)
+    {
+    extrudedText = mesh;
     mesh.position.y = location.y;
+    mesh.position.x = location.x;
+    mesh.position.z = location.z;
+    mesh.rotation.x = -1.57;
     scene.add(mesh);
+    }
+
+    render();
+    
 
     } );
+    }
 }
 
 function render(){
@@ -385,6 +425,7 @@ function onWindowResize() {
 }
 
 function onMouseMove(event){
+    var selectedObject = null;
     mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
     mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
     raycaster.setFromCamera( mouse, camera );
@@ -410,13 +451,120 @@ function onMouseMove(event){
             object.material.color.set("red");
 
             lastIntersect = object;
+            selectedObject = object;
         }
-
-
-        
-        
-		
-	
 	}
+    if(intersects.length ==0)
+    {
+        if(lastIntersect !== null && origColor !== null)
+        {
+            //reset last intersect colour
+            //console.log(origColor);
+            lastIntersect.material.color.set(origColor);
+        }
+        lastIntersect = null;
+        selectedObject = null;
+        currentlySelectedObject = null;
+    }
+    if(selectedObject!==null)
+    {
+    let thisSegment = postcodes.find(thisSegment => thisSegment.identifier === selectedObject.name);
+        if(thisSegment!=null)
+            {
+                if(extruding == false)
+                {
+                //extruding = true;
+                const loc = new THREE.Vector3(0,0,0);
+                currentlySelectedObject = selectedObject;
+                loc.x = selectedObject.position.x;
+                loc.y = 3.85;
+                loc.z = selectedObject.position.z;
+                createMeshText(thisSegment.displayName, loc, 0.8);
+                //console.log(selectedObject.name);
+                extruding = false;
+
+                }
+            }
+    }
 
 }
+
+function onPointerDown(event){
+    if(currentlySelectedObject== null)
+    {
+        controls.enabled = true;
+        controls.update();
+    }
+}
+
+function onclick(event) {
+    //console.log("clicked on");
+    //console.log(currentlySelectedObject);
+    //controls.enabled = !controls.enabled;
+    
+    if(currentlySelectedObject!==null)
+    {
+        currentlyClickedObject = currentlySelectedObject;
+    }
+    if(currentlyClickedObject!==null)
+    {
+
+    let thisSegment = postcodes.find(thisSegment => thisSegment.identifier === currentlySelectedObject.name);
+    if(thisSegment !== null)
+    {
+    var meshString = thisSegment.displayName + "\n" + "Requests: ";
+    meshString += thisSegment.requests;
+
+    
+    const loc = new THREE.Vector3(0,0,0);
+    loc.x = currentlySelectedObject.position.x;
+    loc.y = 3.85;
+    loc.z = currentlySelectedObject.position.z;
+    createMeshText(meshString, loc, 0.2);
+    
+
+    const camPos = {x: camera.position.x, y: camera.position.y, z: camera.position.z};
+    const target = {x:currentlyClickedObject.position.x, y: 12, z: currentlyClickedObject.position.z };
+    tween = new TWEEN.Tween(camPos);
+    tween.to(target, 1000);
+    
+    const camRot =  {x: camera.rotation.x, y: camera.rotation.y, z: camera.rotation.z};
+    const targetRot = {x: -1.57, y: 0, z: 0};
+    tweenR = new TWEEN.Tween(camRot);
+    tweenR.to(targetRot, 1000);
+    controls.enabled = false;
+    controls.target.x = target.x;
+    controls.target.z = target.z;
+   
+    tween.start();
+    tweenR.start();
+
+    tween.onUpdate(function (object) {
+        camera.position.x = object.x;
+        camera.position.y = object.y;
+        camera.position.z = object.z;
+
+        
+
+    })
+
+    tween.onComplete(function(object){
+        controls.enabled = true;
+    })
+
+    tweenR.onUpdate(function (object) {
+        camera.rotation.x = object.x;
+        camera.rotation.y = object.y;
+        camera.rotation.z = object.z;
+        
+
+    })
+
+   
+    currentlyClickedObject = null;
+
+    }
+    }
+    
+}
+
